@@ -1,0 +1,40 @@
+setIsLoading(true);
+
+    const url = `${ep}/auth/token`;
+    let headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+    const body = JSON.stringify({username, password});
+
+    fetch(url, {
+      method: 'post',
+      headers,
+      body,
+    })
+      .then(res => {
+        if (res.status == 401) {
+          throw Error('Wrong username or password');
+        } else if (!res.ok) {
+          throw Error(
+            `Server error. StatusCode ${res.status}. Please contact support if problem remains.`,
+          );
+        } else return res.json();
+      })
+      .then(jwt => {
+        let _user = decodeAndStoreJwt(jwt);
+        handleSessionChange(state, dispatch);
+        useLogging(settings.endpoint, _user).sendInfoLog(
+          `"message": "logged in"`,
+        );
+      })
+      .catch(err => {
+        let errMessage = err;
+        if (err instanceof Error) {
+          //TODO: handle possible Timeout, Network request failed
+          errMessage = err.message;
+          sendErrorLog(`"message": "${err.message}"`);
+        }
+        errorAlert('Failed to log in', errMessage);
+      })
+      .finally(() => setIsLoading(false));
